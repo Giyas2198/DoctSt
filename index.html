@@ -365,21 +365,38 @@
     };
 
     // 3. Handling Preview Foto
-    window.previewImage = function(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          capturedImageBase64 = e.target.result;
-          document.getElementById('imagePreview').src = capturedImageBase64;
-          document.getElementById('imagePreviewContainer').classList.remove('hidden');
-          
-          const now = new Date();
-          document.getElementById('imageOverlayStamp').innerText = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID');
-        }
-        reader.readAsDataURL(file);
+window.previewImage = function(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = function() {
+        // Resize gambar biar ukurannya kecil (< 200KB) & gak kena limit Firebase
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 600;
+        const scaleFactor = MAX_WIDTH / img.width;
+        
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scaleFactor;
+        
+        const ctx = canvas.getContext('canvas');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Kompres ke JPEG kualitas 0.7
+        capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        
+        document.getElementById('imagePreview').src = capturedImageBase64;
+        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+        
+        const now = new Date();
+        document.getElementById('imageOverlayStamp').innerText = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID');
       }
-    };
+    }
+    reader.readAsDataURL(file);
+  }
+};
 
     window.removeImage = function() {
       capturedImageBase64 = null;
