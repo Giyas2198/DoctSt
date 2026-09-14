@@ -128,14 +128,14 @@
         <!-- Tombol Generate QR Code -->
         <button onclick="generateBarcode()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-2.5 rounded-xl transition flex items-center justify-center space-x-2 text-sm">
           <i class="fa-solid fa-qrcode"></i>
-          <span>Save & Create Barcode / QR</span>
+          <span>Save & Create Barcode / QR [cite: 1]</span>
         </button>
 
         <!-- Area Hasil QR Code -->
         <div id="qrResultArea" class="hidden p-4 bg-indigo-50 border border-indigo-100 rounded-xl text-center space-y-2">
           <p class="text-xs font-semibold text-indigo-900">QR Code Berhasil Dibuat & Tersimpan!</p>
           <div id="qrcode" class="flex justify-center p-2 bg-white rounded-lg inline-block mx-auto border"></div>
-          <p class="text-[11px] text-slate-500">Minta pengirim/kurir untuk **scan QR code ini** untuk memverifikasi pengiriman.</p>
+          <p class="text-[11px] text-slate-500">Minta pengirim/kurir untuk **scan QR code ini** untuk memverifikasi pengiriman [cite: 1].</p>
           <div class="flex justify-center items-center space-x-2">
             <span id="generatedDocType" class="text-xs font-semibold text-slate-700 bg-white py-1 px-2.5 rounded-full border"></span>
             <span id="generatedDocCode" class="text-xs font-mono font-bold text-indigo-600 bg-white py-1 px-3 rounded-full border"></span>
@@ -147,7 +147,7 @@
       <div class="bg-softCard p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
         <div class="flex justify-between items-center border-b pb-2">
           <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            <i class="fa-solid fa-camera mr-1"></i> 2. Scan QR & Upload Bukti
+            <i class="fa-solid fa-camera mr-1"></i> 2. Scan QR & Upload Bukti [cite: 1]
           </label>
           <button id="toggleScanBtn" onclick="toggleScanner()" class="text-xs text-softPrimary font-medium flex items-center space-x-1 hover:underline">
             <i class="fa-solid fa-camera"></i>
@@ -169,7 +169,7 @@
 
         <!-- Input Foto Bukti Serah Terima -->
         <div>
-          <label class="text-xs text-slate-500 mb-1 block">Foto Bukti Fisik / Serah Terima</label>
+          <label class="text-xs text-slate-500 mb-1 block">Foto Bukti Fisik / Serah Terima [cite: 1]</label>
           <label class="flex items-center justify-center space-x-2 bg-slate-50 border border-dashed border-slate-300 hover:border-softPrimary rounded-xl p-3 cursor-pointer transition text-slate-500 hover:text-softPrimary">
             <i class="fa-solid fa-camera text-lg"></i>
             <span class="text-xs font-medium">Ambil Foto Fisik</span>
@@ -187,7 +187,7 @@
 
         <button id="btnSubmit" onclick="submitData()" class="w-full bg-softPrimary hover:bg-softPrimaryHover text-white font-medium py-3 rounded-xl shadow-md shadow-indigo-100 transition flex items-center justify-center space-x-2">
           <i class="fa-solid fa-paper-plane"></i>
-          <span>Konfirmasi & Simpan Pengiriman</span>
+          <span>Konfirmasi & Simpan Pengiriman [cite: 1]</span>
         </button>
       </div>
 
@@ -197,6 +197,20 @@
           <span><i class="fa-solid fa-list-check mr-1"></i> Dashboard Dokumen (Firebase)</span>
           <span id="totalCount" class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-[10px]">0 Data</span>
         </h2>
+
+        <!-- Filter Pengirim & Penerima -->
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <div>
+            <select id="filterSender" onchange="applyFilters()" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-softPrimary">
+              <option value="">Semua Pengirim</option>
+            </select>
+          </div>
+          <div>
+            <select id="filterReceiver" onchange="applyFilters()" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-softPrimary">
+              <option value="">Semua Penerima</option>
+            </select>
+          </div>
+        </div>
 
         <div id="historyList" class="space-y-3 max-h-80 overflow-y-auto">
           <div id="emptyState" class="text-center py-6 text-slate-400 text-xs">
@@ -236,14 +250,14 @@
       orderBy 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 1. CONFIG FIREBASE (Ganti pake config lu sendiri bro!)
+    // 1. CONFIG FIREBASE
     const firebaseConfig = {
-  apiKey: "AIzaSyAaV-uGhJmM1YIfJajNhhWzLd6eVGdGI4Q",
-  authDomain: "document-serah-terima.firebaseapp.com",
-  projectId: "document-serah-terima",
-  storageBucket: "document-serah-terima.firebasestorage.app",
-  messagingSenderId: "182261375560",
-  appId: "1:182261375560:web:469e17dd4f16f0857d2e7d"
+      apiKey: "AIzaSyAaV-uGhJmM1YIfJajNhhWzLd6eVGdGI4Q",
+      authDomain: "document-serah-terima.firebaseapp.com",
+      projectId: "document-serah-terima",
+      storageBucket: "document-serah-terima.firebasestorage.app",
+      messagingSenderId: "182261375560",
+      appId: "1:182261375560:web:469e17dd4f16f0857d2e7d"
     };
 
     // Initialize Firebase & Firestore
@@ -253,6 +267,7 @@
     let html5QrcodeScanner = null;
     let isScanning = false;
     let capturedImageBase64 = null;
+    let globalDocs = [];
 
     // Jam Live
     function updateClock() {
@@ -296,7 +311,6 @@
       const docCode = 'DOC-' + Math.floor(100000 + Math.random() * 900000);
 
       try {
-        // Simpan ke Firestore collection 'documents'
         await setDoc(doc(db, "documents", docCode), {
           docNo: docCode,
           docType: docType,
@@ -307,7 +321,9 @@
           photo: null
         });
 
-        // Render QR Code
+        // Isi otomatis input kode di Step 2 supaya habis generate tinggal foto & scan/klik konfirmasi
+        document.getElementById('docNumber').value = docCode;
+
         const qrContainer = document.getElementById('qrcode');
         qrContainer.innerHTML = "";
         new QRCode(qrContainer, {
@@ -365,38 +381,22 @@
     };
 
     // 3. Handling Preview Foto
-window.previewImage = function(event) {
-  const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const img = new Image();
-      img.src = e.target.result;
-      img.onload = function() {
-        // Resize gambar biar ukurannya kecil (< 200KB) & gak kena limit Firebase
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 600;
-        const scaleFactor = MAX_WIDTH / img.width;
-        
-        canvas.width = MAX_WIDTH;
-        canvas.height = img.height * scaleFactor;
-        
-        const ctx = canvas.getContext('canvas');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        // Kompres ke JPEG kualitas 0.7
-        capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
-        
-        document.getElementById('imagePreview').src = capturedImageBase64;
-        document.getElementById('imagePreviewContainer').classList.remove('hidden');
-        
-        const now = new Date();
-        document.getElementById('imageOverlayStamp').innerText = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID');
+    window.previewImage = function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        // Kompres sedikit / baca via FileReader
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          capturedImageBase64 = e.target.result;
+          document.getElementById('imagePreview').src = capturedImageBase64;
+          document.getElementById('imagePreviewContainer').classList.remove('hidden');
+          
+          const now = new Date();
+          document.getElementById('imageOverlayStamp').innerText = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID');
+        }
+        reader.readAsDataURL(file);
       }
-    }
-    reader.readAsDataURL(file);
-  }
-};
+    };
 
     window.removeImage = function() {
       capturedImageBase64 = null;
@@ -419,15 +419,15 @@ window.previewImage = function(event) {
         const docSnap = await getDoc(docRef);
 
         if (!docSnap.exists()) {
-          alert("Nomor Dokumen tidak ditemukan di Firebase!");
+          alert("Nomor Dokumen tidak ditemukan di Firebase! Pastikan sudah klik 'Save & Create Barcode / QR' di Step 1.");
           return;
         }
 
-        // Update dokumen yang udah ada
+        // Pastikan foto ikut tersimpan (jika user sudah ambil foto)
         await updateDoc(docRef, {
           status: 'DELIVERED',
           deliveredAt: new Date(),
-          photo: capturedImageBase64 || null
+          photo: capturedImageBase64 || docSnap.data().photo || null
         });
 
         // Reset Form UI
@@ -437,31 +437,64 @@ window.previewImage = function(event) {
         document.getElementById('docTypeSelect').value = '';
         document.getElementById('senderSelect').value = '';
         document.getElementById('receiverSelect').value = '';
+        document.getElementById('docTypeManual').classList.add('hidden');
+        document.getElementById('senderManual').classList.add('hidden');
+        document.getElementById('receiverManual').classList.add('hidden');
 
-        alert(`Dokumen ${docNo} BERHASIL dikonfirmasi & disimpan ke Firebase!`);
+        alert(`Dokumen ${docNo} BERHASIL dikonfirmasi & disimpan ke Firebase beserta fotonya!`);
 
       } catch (e) {
         alert("Gagal update data: " + e.message);
       }
     };
 
-    // 5. Listen Real-Time Update dari Firestore ke Dashboard
-    const q = query(collection(db, "documents"), orderBy("createdAt", "desc"));
-    
-    onSnapshot(q, (snapshot) => {
+    // Populate opsi dropdown filter otomatis dari data
+    function populateFilterOptions(docs) {
+      const senderSet = new Set();
+      const receiverSet = new Set();
+
+      docs.forEach(d => {
+        if (d.sender) senderSet.add(d.sender);
+        if (d.receiver) receiverSet.add(d.receiver);
+      });
+
+      const senderSelect = document.getElementById('filterSender');
+      const receiverSelect = document.getElementById('filterReceiver');
+
+      const currentSender = senderSelect.value;
+      const currentReceiver = receiverSelect.value;
+
+      senderSelect.innerHTML = '<option value="">Semua Pengirim</option>' + 
+        Array.from(senderSet).map(s => `<option value="${s}" ${s === currentSender ? 'selected' : ''}>${s}</option>`).join('');
+
+      receiverSelect.innerHTML = '<option value="">Semua Penerima</option>' + 
+        Array.from(receiverSet).map(r => `<option value="${r}" ${r === currentReceiver ? 'selected' : ''}>${r}</option>`).join('');
+    }
+
+    // Fungsi eksekusi filter
+    window.applyFilters = function() {
+      const selectedSender = document.getElementById('filterSender').value;
+      const selectedReceiver = document.getElementById('filterReceiver').value;
+
+      const filteredDocs = globalDocs.filter(data => {
+        const matchSender = !selectedSender || data.sender === selectedSender;
+        const matchReceiver = !selectedReceiver || data.receiver === selectedReceiver;
+        return matchSender && matchReceiver;
+      });
+
+      renderHistoryList(filteredDocs);
+    };
+
+    // Fungsi Render Tampilan Riwayat
+    function renderHistoryList(docs) {
       const historyContainer = document.getElementById('historyList');
       const emptyState = document.getElementById('emptyState');
-      
-      const docs = [];
-      snapshot.forEach((doc) => {
-        docs.push(doc.data());
-      });
 
       document.getElementById('totalCount').innerText = `${docs.length} Data`;
 
       if (docs.length === 0) {
         emptyState.classList.remove('hidden');
-        emptyState.innerHTML = `<i class="fa-solid fa-box-open text-2xl mb-2 block"></i> Belum ada dokumen diserahterimakan.`;
+        emptyState.innerHTML = `<i class="fa-solid fa-box-open text-2xl mb-2 block"></i> Tidak ada dokumen yang cocok dengan filter.`;
         historyContainer.innerHTML = '';
         return;
       }
@@ -508,6 +541,19 @@ window.previewImage = function(event) {
           </div>
         `;
       }).join('');
+    }
+
+    // 5. Listen Real-Time Update dari Firestore ke Dashboard
+    const q = query(collection(db, "documents"), orderBy("createdAt", "desc"));
+    
+    onSnapshot(q, (snapshot) => {
+      globalDocs = [];
+      snapshot.forEach((doc) => {
+        globalDocs.push(doc.data());
+      });
+
+      populateFilterOptions(globalDocs);
+      applyFilters();
     });
   </script>
 </body>
